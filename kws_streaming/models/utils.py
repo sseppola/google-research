@@ -28,9 +28,10 @@ from kws_streaming.models import model_params
 from kws_streaming.models import model_utils
 from kws_streaming.models import models as kws_models
 
-models_utils = tf._keras_internal.models  # pylint: disable=protected-access
-functional = tf._keras_internal.engine.functional  # pylint: disable=protected-access
-
+from tensorflow.python import keras as tf_keras
+clone_layer                   = tf_keras.models._clone_layer
+clone_layers_and_model_config = tf_keras.models._clone_layers_and_model_config
+reconstruct_from_config       = tf_keras.engine.functional.reconstruct_from_config
 
 def save_model_summary(model, path, file_name='model_summary.txt'):
   """Saves model topology/summary in text format.
@@ -101,13 +102,13 @@ def _clone_model(model, input_tensors):
       newly_created_input_layer = input_tensor._keras_history.layer
       new_input_layers[original_input_layer] = newly_created_input_layer
 
-  model_config, created_layers = tf._keras_internal.models._clone_layers_and_model_config(  # pylint:disable=protected-access,line-too-long
-      model, new_input_layers, tf._keras_internal.models._clone_layer)
+  model_config, created_layers = clone_layers_and_model_config(  # pylint:disable=line-too-long
+      model, new_input_layers, clone_layer)
   # pylint: enable=protected-access
 
   # Reconstruct model from the config, using the cloned layers.
   input_tensors, output_tensors, created_layers = (
-      tf._keras_internal.engine.functional.reconstruct_from_config(  # pylint:disable=protected-access
+      reconstruct_from_config(  
           model_config, created_layers=created_layers))
 
   new_model = tf.keras.Model(input_tensors, output_tensors, name=model.name)
